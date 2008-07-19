@@ -23,29 +23,49 @@ class ExternalGUI(object):
         @todo: This GUI will need some serious content separation, but for
         now it is all run in the init.. making it rather messy i know.
         '''
+        if 0:
+            assert isinstance(houd, hcrf.houdini.HoudiniData)
+        
+        self.houd = houd
+        
         # Create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 
         # Set the window dimensions
-        self.window.set_geometry_hints(min_width=400,
-                                       min_height=500)
+        window_width = 400
+        window_height = 500
+        self.window.set_geometry_hints(
+            #min_width=window_width,
+            #min_height=window_height,
+            #max_width=window_width,
+            #max_height=window_height,
+        )
 
         # Set the window title
-        self.window.set_title("Houdini Component Rigging Framework")
+        self.window.set_title('Houdini CRF')
 
-        self.window.connect("delete_event", self.delete_event)
-        self.window.connect("destroy", self.destroy)
+        self.window.connect('delete_event', self.delete_event)
+        self.window.connect('destroy', self.destroy)
 
         # Sets the border width of the window.
         self.window.set_border_width(5)
+        window_table = gtk.Table(20, 1, True)
+        window_table.size_request
+        window_table.show()
+        self.window.add(window_table)
 
         # Create the Notebook and apply its settings
         notebook = gtk.Notebook()
         notebook.set_tab_pos(gtk.POS_TOP)
+        window_table.attach(notebook, 0, 1, 0, 19)
 
-        # Add the notebook
-        self.window.add(notebook)
-
+        # Create Houdini Connect Button
+        button = gtk.Button('Connect to Houdini')
+        window_table.attach(button, 0, 1, 19, 20)
+        button.connect_object(
+            'clicked', self.connect_houdini_pressed, button)
+        button.show()
+        
         # Create the Tables for the tabs.
         component_table = gtk.Table(16, 6, True)
         component_testing_table = gtk.Table(6, 6, True)
@@ -184,15 +204,19 @@ class ExternalGUI(object):
         # Replace spaces with underscores.
         widget.set_text(widget.get_text().replace(' ', '_'))
 
+    def connect_houdini_pressed(self, widget):
+        '''
+        '''
+        result = self.houd.connect()
+        if result:
+            self.window.set_title('Houdini CRF: Connected')
+        else:
+            self.window.set_title('Houdini CRF: Disconnected')
+    
     def create_character_pressed(self, widget):
         '''
         '''
-        print 'Hou Dir?%s' % hou.pwd()
-        hou.cd('/obj')
-        print 'Hou Dir?%s' % hou.pwd()
-        node = hou.pwd()
-        ball = node.createNode('geo', 'ball', run_init_scripts=False)
-        print 'all done.'
+        pass
 
     def create_component_pressed(self, widget):
         '''
@@ -218,17 +242,11 @@ def run_external():
     '''
     houd = hcrf.houdini.HoudiniData()
     gui = ExternalGUI(houd)
-    if not houd.connected:
-        dialog = gtk.MessageDialog(
-            gui.window,
-            flags=gtk.DIALOG_MODAL,
-            type=gtk.MESSAGE_WARNING,
-            buttons=gtk.BUTTONS_OK,
-            message_format='HCRF has not found a live Houdini session so all '
-            'interactions with HCRF will remain local.'
-        )
-        dialog.run()
-        dialog.destroy()
+    if houd.connected():
+        gui.window.set_title('Houdini CRF: Connected')
+    else:
+        gui.window.set_title('Houdini CRF: Disconnected')
+    houd.set_dialog_window(gui.window)
     gui.main()
 
 
